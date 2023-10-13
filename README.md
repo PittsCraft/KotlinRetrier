@@ -15,17 +15,11 @@ val coldRetrier = withExponentialBackoff()
     .onlyWhen(condition)
     // Ensure your retrier fails on some conditions
     .giveUpAfterMaxAttempts(10)
+    .giveUpAfterTimeout(30.seconds)
     .giveUpOnErrors {
         it is MyFatalError
     }
-    // Ensure your retrier won't give up on some errors, even if `maxAttempts`
-    // has been reached or the error is a `MyFatalError`
-    .retryOnErrors {
-        it is MyTmpError
-    }
 ```
-
-**All giveUp / retry modifiers are evaluated in reversed order.**
 
 [Exponential backoff](https://aws.amazon.com/fr/blogs/architecture/exponential-backoff-and-jitter/) with
 full jitter is the default and recommended algorithm to fetch from a backend.
@@ -67,11 +61,9 @@ If you don't repeat, you can directly wait for the single task value in a corout
 val value = withExponentialBackoff() 
     .onlyWhen(conditionFlow)
     .giveUpAfterMaxAttempts(10)
+    .giveUpAfterTimeout(30.seconds)
     .giveUpOnErrors {
         it is MyFatalError
-    }
-    .retryOnErrors {
-        it is MyTmpError
     }
     .task {
         api.fetchValue()

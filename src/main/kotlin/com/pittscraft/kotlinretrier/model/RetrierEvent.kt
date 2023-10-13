@@ -1,5 +1,7 @@
 package com.pittscraft.kotlinretrier.model
 
+import java.time.Instant
+
 sealed class RetrierEvent<Output> {
 
     val success: AttemptSuccess<Output>?
@@ -43,6 +45,6 @@ sealed class RetrierEvent<Output> {
         }
 }
 
-data class AttemptFailure<Output>(val index: UInt, val error: Throwable) : RetrierEvent<Output>()
+data class AttemptFailure<Output>(val trialStart: Instant, val index: UInt, val error: Throwable) : RetrierEvent<Output>()
 data class AttemptSuccess<Output>(val value: Output) : RetrierEvent<Output>()
 data class Completion<Output>(val error: Throwable? = null) : RetrierEvent<Output>()

@@ -3,8 +3,8 @@ package com.pittscraft.kotlinretrier.dsl
 import com.pittscraft.kotlinretrier.model.AttemptFailure
 import com.pittscraft.kotlinretrier.model.RetryPolicy
 import com.pittscraft.kotlinretrier.model.SingleOutputRetrier
+import com.pittscraft.kotlinretrier.policybuilding.giveUpAfterTimeout
 import com.pittscraft.kotlinretrier.policybuilding.giveUpOn
-import com.pittscraft.kotlinretrier.policybuilding.retryOn
 import com.pittscraft.kotlinretrier.retriers.ConditionalRetrier
 import com.pittscraft.kotlinretrier.retriers.SimpleRetrier
 import kotlinx.coroutines.flow.Flow
@@ -22,17 +22,13 @@ class ColdRetrier(private val policy: RetryPolicy, private val conditionFlow: Fl
         return giveUpOn { it.index >= maxAttempts - 1u }
     }
 
-    fun giveUpOnErrorsMatching(finalErrorCriterium: (Throwable) -> Boolean): ColdRetrier {
-        return giveUpOn { finalErrorCriterium(it.error) }
-    }
-
-    fun retryOn(criterium: (AttemptFailure<*>) -> Boolean): ColdRetrier {
-        val policy = this.policy.retryOn(criterium)
+    fun giveUpAfterTimeout(timeout: Duration): ColdRetrier {
+        val policy = this.policy.giveUpAfterTimeout(timeout)
         return ColdRetrier(policy, conditionFlow)
     }
 
-    fun retryOnErrorsMatching(criterium: (Throwable) -> Boolean): ColdRetrier {
-        return retryOn { criterium(it.error) }
+    fun giveUpOnErrorsMatching(finalErrorCriterium: (Throwable) -> Boolean): ColdRetrier {
+        return giveUpOn { finalErrorCriterium(it.error) }
     }
 
     fun onlyWhen(conditionFlow: Flow<Boolean>): ColdRetrier {

@@ -15,6 +15,7 @@ class ConditionalRetrier<Output>(
             var attempt = 0u
             var lastCondition: Boolean? = null
             val emptyWaitingFlow = MutableSharedFlow<RetrierEvent<Output>>()
+            var lastRetrier: SimpleRetrier<Output>? = null
             return conditionFlow
                 .distinctUntilChanged()
                 // Catch clean completion of the condition flow and emit the special null value
@@ -28,29 +29,35 @@ class ConditionalRetrier<Output>(
                     val previousCondition = lastCondition
                     lastCondition = it
                     when (it) {
-                        true -> SimpleRetrier(policy, task)
-                            .map { event ->
+                        true -> {
+                            val retrier = SimpleRetrier(policy, task)
+                            lastRetrier = retrier
+                            retrier.map { event ->
                                 if (event is AttemptFailure) {
-                                    val newEvent = AttemptFailure<Output>(attempt, event.error)
+                                    val newEvent = AttemptFailure<Output>(event.trialStart, attempt, event.error)
                                     attempt++
                                     newEvent
                                 } else {
                                     event
                                 }
                             }
+                        }
                         // If the false condition is interrupting a trial, emit an AttemptFailure then wait for the
                         // condition to change
-                        false -> if (previousCondition == true) {
-                            attempt++
-                            flowOf(
+                        false -> {
+                            val retrier = lastRetrier
+                            if (previousCondition == true && retrier != null) {
+                                attempt++
                                 flowOf(
-                                    AttemptFailure(attempt - 1u, CancellationException())
-                                ),
-                                emptyWaitingFlow
-                            ).flattenConcat()
-                        } else {
-                            // Else just wait for the condition to change
-                            MutableSharedFlow()
+                                    flowOf(
+                                        AttemptFailure(retrier.trialStart, attempt - 1u, CancellationException())
+                                    ),
+                                    emptyWaitingFlow
+                                ).flattenConcat()
+                            } else {
+                                // Else just wait for the condition to change
+                                MutableSharedFlow()
+                            }
                         }
                         // The condition flow stopped after either emitting false or nothing, the retrier will never
                         // finish naturally.
