@@ -16,9 +16,6 @@ repositories {
 }
 
 publishing {
-    repositories {
-        mavenCentral()
-    }
     publications {
         create<MavenPublication>("maven") {
             groupId = "com.pittscraft"
