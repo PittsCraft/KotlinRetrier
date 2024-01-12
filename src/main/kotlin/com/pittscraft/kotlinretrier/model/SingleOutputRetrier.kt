@@ -1,8 +1,6 @@
 package com.pittscraft.kotlinretrier.model
 
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 
 interface SingleOutputRetrier<Output>: Retrier<Output> {
 
@@ -23,4 +21,9 @@ interface SingleOutputRetrier<Output>: Retrier<Output> {
             .first()
             .value
     }
+
+    fun onEach(action: suspend (RetrierEvent<Output>) -> Unit): SingleOutputRetrier<Output> = transform { value ->
+        action(value)
+        return@transform emit(value)
+    }.singleOutput()
 }
