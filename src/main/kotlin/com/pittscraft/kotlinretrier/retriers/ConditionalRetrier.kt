@@ -14,13 +14,13 @@ class ConditionalRetrier<Output>(
         get() {
             var attempt = 0u
             var lastCondition: Boolean? = null
-            val emptyWaitingFlow = MutableSharedFlow<RetrierEvent<Output>>()
             var lastRetrier: SimpleRetrier<Output>? = null
             return conditionFlow
                 .distinctUntilChanged()
                 // Catch clean completion of the condition flow and emit the special null value
                 .map<Boolean, Boolean?> { it }
                 .onCompletion {
+                    // Let throwable bubble up
                     if (it == null && lastCondition != true) {
                         emit(null)
                     }
@@ -49,14 +49,11 @@ class ConditionalRetrier<Output>(
                             if (previousCondition == true && retrier != null) {
                                 attempt++
                                 flowOf(
-                                    flowOf(
-                                        AttemptFailure(retrier.trialStart, attempt - 1u, CancellationException())
-                                    ),
-                                    emptyWaitingFlow
-                                ).flattenConcat()
+                                    AttemptFailure(retrier.trialStart, attempt - 1u, CancellationException())
+                                )
                             } else {
                                 // Else just wait for the condition to change
-                                MutableSharedFlow()
+                                emptyFlow()
                             }
                         }
                         // The condition flow stopped after either emitting false or nothing, the retrier will never
@@ -79,4 +76,5 @@ class ConditionalRetrier<Output>(
     }
 }
 
-class ConditionFlowCompletedWithNoValueOrFalse: CancellationException("Condition flow completed after either emitting false or nothing")
+class ConditionFlowCompletedWithNoValueOrFalse :
+    CancellationException("Condition flow completed after either emitting false or nothing")
