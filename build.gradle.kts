@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.pittscraft"
-version = "0.0.1-alpha.2"
+version = "0.0.1-alpha.3"
 
 val coroutinesVersion = "1.7.3"
 
@@ -20,7 +20,7 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "com.pittscraft"
             artifactId = "kotlin-retrier"
-            version = "0.0.1-alpha.2"
+            version = "0.0.1-alpha.3"
 
             from(components["java"])
         }
