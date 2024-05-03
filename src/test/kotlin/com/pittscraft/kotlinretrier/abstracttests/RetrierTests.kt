@@ -3,6 +3,7 @@ package com.pittscraft.kotlinretrier.abstracttests
 import com.pittscraft.kotlinretrier.Expectation
 import com.pittscraft.kotlinretrier.model.*
 import com.pittscraft.kotlinretrier.policies.ConstantDelayRetryPolicy
+import com.pittscraft.kotlinretrier.policybuilding.giveUpOn
 import com.pittscraft.kotlinretrier.wait
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.takeWhile
@@ -104,5 +105,22 @@ abstract class RetrierTests<R : Retrier<Unit>>(private val retrierBuilder: (Retr
                 }
         }
         gotSuccess.awaitFulfillment(joining = job)
+    }
+
+    @Test
+    fun `test does not throw`() = runTest {
+        val retrier = retrierBuilder(ConstantDelayRetryPolicy().giveUpOn { true }) {
+            throw Error()
+        }
+        val didNotThrow = Expectation("Did not throw")
+        val job = launch {
+            try {
+                retrier
+                    .collect {
+                    }
+                didNotThrow.fulfill()
+            } catch(_: Throwable) {}
+        }
+        didNotThrow.awaitFulfillment(joining = job)
     }
 }
