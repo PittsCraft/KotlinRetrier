@@ -30,7 +30,7 @@ class SimpleRetrier<Output>(
                true
            }
        }
-   }
+   }.catch {} // After retryWhen sends the completion, it also throws the related exception and we don't want that
 
     override suspend fun collect(collector: FlowCollector<RetrierEvent<Output>>) {
         flow.collect(collector)
