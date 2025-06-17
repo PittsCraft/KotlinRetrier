@@ -3,6 +3,7 @@ package com.pittscraft.kotlinretrier.policies
 import com.pittscraft.kotlinretrier.model.AttemptFailure
 import com.pittscraft.kotlinretrier.model.RetryDecision
 import com.pittscraft.kotlinretrier.model.RetryPolicy
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -25,7 +26,7 @@ class ExponentialBackoffRetryPolicy(
     private var previousDelay: Duration? = null
 
     fun noJitterDelay(attemptIndex: UInt): Duration {
-        val maxSlots = 2.0.pow(attemptIndex.toDouble())
+        val maxSlots = 2.0.pow(min(attemptIndex.toDouble(), 1000.0))
         return timeSlot * maxSlots
     }
 
